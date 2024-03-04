@@ -19,6 +19,9 @@
   #define MAX_PIN 53
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   #define MAX_PIN 13 
+#elif defined(ESP32) || defined(ESP8266)
+  #define MAX_PIN 100
+  #define MAX_CHAN 10
 #endif
 
 /*
@@ -85,13 +88,22 @@ void TNotePlayer::playNote(int len, TPlayerAlteration alter, int dots)
   
   unsigned long ms = millis();
   
+  ledcAttachPin(_pwm_pin, _pwm_chan);
+  ledcWriteTone(_pwm_chan, round(freq));
+  int soundDuration;
   if (this->Mode == ModeNormal)
-    tone(_pwm_pin, round(freq), round(duration * 7 / 8.0));
+    soundDuration = round(duration * 7 / 8.0);
   else if (this->Mode == ModeLegato)
-    tone(_pwm_pin, round(freq), round(duration));  
+    soundDuration = round(duration);  
   else if (this->Mode == ModeStaccato)
-    tone(_pwm_pin, round(freq), round(duration * 3 / 4.0));
-  
+    soundDuration = round(duration * 3 / 4.0);
+
+  while (millis() - ms < soundDuration) {
+    vTaskDelay(1);
+  }  
+
+  ledcWriteTone(_pwm_chan, 0);
+
   #if defined(BASIC_SOUND_DEBUG)
     Serial.print(semitone);
     Serial.print(" ");
@@ -101,16 +113,15 @@ void TNotePlayer::playNote(int len, TPlayerAlteration alter, int dots)
     Serial.print(" ");
     Serial.println(dots);
   #endif
-  while (millis() - ms < duration)
-  {
-    NOP;
+  while (millis() - ms < duration) {
+    vTaskDelay(1);
   }  
 }
 
 
-void TNotePlayer::playString(char* str)
+void TNotePlayer::playString(const char* str)
 {
-  char* ptr = str;
+  const char* ptr = str;
   char ch = toupper(*ptr);
   int count = 0;
   while ((ch != '\0') && (count < MAX_STR_LEN))
@@ -242,9 +253,13 @@ void TNotePlayer::stop()
 void TNotePlayer::setPin(int pin)
 {
   stop();
-  if (pin < MAX_PIN) 
-    this->_pwm_pin = pin;
-  pinMode(this->_pwm_pin, OUTPUT);
+  this->_pwm_pin = pin;
+}
+
+void TNotePlayer::setChan(int chan)
+{
+  stop();
+  this->_pwm_chan = chan;
 }
 
 void TNotePlayer::_Init()
@@ -256,22 +271,18 @@ void TNotePlayer::_Init()
   this->Note = 0;
   this->Alteration = AlterNormal;
   #if defined(BASIC_SOUND_DEBUG)
-    Serial.begin(9600);
+    Serial.begin(115200);
   #endif
 }
 
-TNotePlayer::TNotePlayer()
-{
+TNotePlayer::TNotePlayer(int pin, int chan) {
   _Init();
-  this->_pwm_pin = SPEAKER;
-  pinMode(this->_pwm_pin, OUTPUT);
-}
-
-TNotePlayer::TNotePlayer(int pin)
-{
-  _Init();
-  if (pin < MAX_PIN) 
+  if (pin < MAX_PIN) {
     this->_pwm_pin = pin;
+  }
+  if (chan < MAX_CHAN) {
+    this->_pwm_chan = chan;
+  }
   pinMode(this->_pwm_pin, OUTPUT);
 }
 

@@ -21,8 +21,7 @@ typedef enum { AlterNormal, AlterFlat, AlterSharp, AlterDefault } TPlayerAlterat
 class TNotePlayer
 {
   public:
-    TNotePlayer();        // initialize with default pin (2)
-    TNotePlayer(int pin); // initialize with user-defined pin
+    TNotePlayer(int pin = 12, int chan = 5); // initialize with user-defined pin
 
     // play string in QuickBasic format
     // differences:
@@ -32,17 +31,19 @@ class TNotePlayer
     //   +1 octave (O7, N85 - N90)
     //   M#, M- for overall (global) semitone alteration
     //   suffix ' for natural note when global semitone is setted
-    void playString(char* str); 
+    void playString(const char* str); 
 
     // stop playing from the current pin
     void stop();
 
     // stop playing and set new pin for output
     void setPin(int pin);
+    void setChan(int chan);
 
   private:
     // hardware settings
     int _pwm_pin;
+    int _pwm_chan;
     // global mode settings, set via commands inside string
     int Tempo;
     int Duration;
