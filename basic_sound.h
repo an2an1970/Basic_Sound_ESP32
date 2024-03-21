@@ -10,7 +10,7 @@
  *  Created by Andrey Simonov, 2019.
  */
 
-#include "arduino.h"
+#include "Arduino.h"
 
 // comment this to disable debug via Serial
 #define BASIC_SOUND_DEBUG
